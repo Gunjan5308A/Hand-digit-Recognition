@@ -94,7 +94,10 @@ class recog:
         self.AC2 = softmax(self.L2)
         return self.AC2
 
-print('model test results: ')
-model = recog(X_train.T, y_train, lr=0.1, epochs=500)
-model.gradient_decent()
-print(accuracy_report(model.predict(X_test.T), y_test))
+    def save_model(self):
+        np.savez("digit_recog_model.npz", w1=self.w1, w2=self.w2, b1=self.b1, b2=self.b2)
+
+if __name__ == "__main__":
+    model = recog(X_train.T, y_train, lr=0.1, epochs=500)
+    model.gradient_decent()
+    print("Test accuracy: \n",accuracy_report(model.predict(X_test.T), y_test))
