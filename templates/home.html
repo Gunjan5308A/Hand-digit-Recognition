@@ -58,7 +58,7 @@
     </style>
 </head>
 <body>
-    <h1> Your number: {{ num}}</h1>
+    <h1 id="magic_number"> Your number: {{num}}</h1>
     <div class="container">
         <h1>Draw (28 x 28)</h1>
         <canvas id="drawingCanvas" width="28" height="28"></canvas>
@@ -66,13 +66,14 @@
         <div class="buttons">
             <button onclick="clearCanvas()">Clear</button>
             <button onclick="sendImage()">Send</button>
+            <button onclick="show_number()">show number</button>
         </div>
     </div>
 
     <script>
         const canvas = document.getElementById("drawingCanvas");
         const ctx = canvas.getContext("2d");
-
+        const number = document.getElementById("magic_number")
         // Fill initial canvas black
         ctx.fillStyle = "black";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -109,6 +110,12 @@
                 },
                 body: JSON.stringify({ image: imageData })
             });
+
+        }
+
+        function show_number() {
+            window.location.reload();
+                
         }
     </script>
 
