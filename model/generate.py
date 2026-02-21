@@ -23,8 +23,7 @@ def singular_prediction(X):
         b2 = data["b2"]
 
     else:
-        from model import recog
-        from model import accuracy_report
+        import model
         from sklearn.datasets import fetch_openml
 
         mnist = fetch_openml('mnist_784', version=1)
@@ -34,7 +33,7 @@ def singular_prediction(X):
 
         x /= 255.0
 
-        model = recog(x.T, y, lr=0.1, epochs=500)
+        model = model.recog(x.T, y, lr=0.1, epochs=500)
         model.gradient_decent()
         model.save_model()
 
@@ -53,4 +52,19 @@ def singular_prediction(X):
     Z2 = w2 @ A1 + b2
     A2 = softmax(Z2)
     return np.argmax(A2)
+
+def train_model():
+        import model
+        from sklearn.datasets import fetch_openml
+
+        mnist = fetch_openml('mnist_784', version=1)
+
+        x = mnist.data.to_numpy().astype(np.float32)
+        y = mnist.target.to_numpy().astype(np.int64)
+
+        x /= 255.0
+
+        model = model.recog(x.T, y, lr=0.1, epochs=500)
+        model.gradient_decent()
+        model.save_model()
 
