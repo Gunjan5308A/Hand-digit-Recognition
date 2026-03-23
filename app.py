@@ -3,50 +3,51 @@ import base64
 import io
 import numpy as np
 from PIL import Image
-from model.generate import singular_prediction
+from model.generate import DigitPredictor
 
 app = Flask(__name__)
 
-number = None
+# Load model once on startup
+predictor = DigitPredictor("digit_recog_model.npz")
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    global number
-    data = request.get_json()
-    image_data = data["image"]
+    try:
+        data = request.get_json()
+        image_data = data["image"]
 
-    # Remove metadata (data:image/png;base64,...)
-    image_data = image_data.split(",")[1]
+        # Remove metadata (data:image/png;base64,...)
+        image_data = image_data.split(",")[1]
 
-    # Decode base64
-    image_bytes = base64.b64decode(image_data)
-    image = Image.open(io.BytesIO(image_bytes)).convert("L")
+        # Decode base64
+        image_bytes = base64.b64decode(image_data)
+        image = Image.open(io.BytesIO(image_bytes)).convert("L")
 
-    # Ensure 28x28
-    image = image.resize((28, 28))
+        # Resize to 28x28 using LANCZOS for better quality
+        image = image.resize((28, 28), Image.Resampling.LANCZOS)
 
-    # Convert to numpy array
-    img_array = np.array(image)
+        # Convert to numpy array and normalize
+        img_array = np.array(image).astype(np.float32) / 255.0
 
-    # Normalize (0-255 → 0-1)
-    img_array = img_array / 255.0
+        # Flatten and predict
+        flattened = img_array.flatten() 
+        prediction = predictor.predict(flattened)
+        
+        print(f"Prediction: {prediction}")
 
-    # Flatten to 784
-    flattened = img_array.flatten() 
-    number = singular_prediction(flattened)
-
-    print("\n\n ",number)
-
-
-    return jsonify({
-        "message": "Image received",
-        "array_length": int(len(flattened))
-    })
+        return jsonify({
+            "prediction": prediction,
+            "status": "success"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
 
 @app.route('/')
 def home():
-    global number
-    return render_template('home.html', num=number)
+    return render_template('home.html')
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,13 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Digit Drawer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digit Recognition</title>
     <style>
         body {
             margin: 0;
-            background-color: #000;
-            font-family: Arial, sans-serif;
-            color: white;
+            background-color: #0d1117;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #c9d1d9;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -15,93 +17,179 @@
         }
 
         .container {
-            background-color: #111;
+            background-color: #161b22;
             padding: 40px;
-            border-radius: 12px;
+            border-radius: 16px;
             text-align: center;
-            box-shadow: 0 0 20px rgba(255,255,255,0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            border: 1px solid #30363d;
         }
 
         h1 {
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #58a6ff;
+        }
+
+        .prediction-text {
+            font-size: 24px;
             margin-bottom: 20px;
-            font-weight: normal;
+            min-height: 32px;
+        }
+
+        #predicted_num {
+            font-weight: bold;
+            color: #f0883e;
+            font-size: 32px;
         }
 
         canvas {
             background-color: black;
-            border: 2px solid white;
+            border: 2px solid #30363d;
+            border-radius: 8px;
             image-rendering: pixelated;
             width: 280px;
             height: 280px;
             cursor: crosshair;
+            touch-action: none;
         }
 
         .buttons {
-            margin-top: 20px;
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
         }
 
         button {
-            padding: 10px 20px;
-            margin: 0 10px;
-            font-size: 15px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 500;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            background-color: white;
-            color: black;
-            transition: 0.2s;
+            transition: all 0.2s ease;
+            background-color: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
         }
 
         button:hover {
-            background-color: #ccc;
+            background-color: #30363d;
+            border-color: #8b949e;
+        }
+
+        button.primary {
+            background-color: #238636;
+            color: white;
+            border: 1px solid rgba(240,246,252,0.1);
+        }
+
+        button.primary:hover {
+            background-color: #2ea043;
+        }
+
+        .status {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #8b949e;
         }
     </style>
 </head>
 <body>
-    <h1 id="magic_number"> Your number: {{num}}</h1>
     <div class="container">
-        <h1>Draw (28 x 28)</h1>
-        <canvas id="drawingCanvas" width="28" height="28"></canvas>
+        <h1>Handwritten Digit Recognition</h1>
+        <div class="prediction-text">
+            Prediction: <span id="predicted_num">-</span>
+        </div>
+        
+        <canvas id="drawingCanvas" width="280" height="280"></canvas>
 
         <div class="buttons">
             <button onclick="clearCanvas()">Clear</button>
-            <button onclick="sendImage()">Send</button>
-            <button onclick="show_number()">show number</button>
+            <button class="primary" onclick="sendImage()">Predict Digit</button>
         </div>
+        <div id="statusText" class="status">Draw a digit (0-9) inside the box</div>
     </div>
 
     <script>
         const canvas = document.getElementById("drawingCanvas");
         const ctx = canvas.getContext("2d");
-        const number = document.getElementById("magic_number")
-        // Fill initial canvas black
+        const predictionSpan = document.getElementById("predicted_num");
+        const statusText = document.getElementById("statusText");
+
+        // Set initial background
         ctx.fillStyle = "black";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         let drawing = false;
 
-        canvas.addEventListener("mousedown", () => drawing = true);
-        canvas.addEventListener("mouseup", () => drawing = false);
-        canvas.addEventListener("mouseleave", () => drawing = false);
+        // Brush settings
+        ctx.lineWidth = 15;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "white";
 
-        canvas.addEventListener("mousemove", (e) => {
-            if (!drawing) return;
-
+        function getMousePos(e) {
             const rect = canvas.getBoundingClientRect();
-            const x = Math.floor((e.clientX - rect.left) / 10);
-            const y = Math.floor((e.clientY - rect.top) / 10);
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
 
-            ctx.fillStyle = "white";   // White ink
-            ctx.fillRect(x, y, 1, 1);
-        });
+        function startDrawing(e) {
+            drawing = true;
+            const pos = getMousePos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+
+        function draw(e) {
+            if (!drawing) return;
+            const pos = getMousePos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            e.preventDefault();
+        }
+
+        function stopDrawing() {
+            drawing = false;
+        }
+
+        // Mouse events
+        canvas.addEventListener("mousedown", startDrawing);
+        canvas.addEventListener("mousemove", draw);
+        canvas.addEventListener("mouseup", stopDrawing);
+        canvas.addEventListener("mouseleave", stopDrawing);
+
+        // Touch events
+        canvas.addEventListener("touchstart", startDrawing);
+        canvas.addEventListener("touchmove", draw);
+        canvas.addEventListener("touchend", stopDrawing);
 
         function clearCanvas() {
             ctx.fillStyle = "black";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            predictionSpan.innerText = "-";
+            statusText.innerText = "Draw a digit (0-9) inside the box";
         }
 
         function sendImage() {
-            const imageData = canvas.toDataURL();
+            statusText.innerText = "Analyzing...";
+            
+            // Create a temporary small canvas for resizing
+            const smallCanvas = document.createElement('canvas');
+            smallCanvas.width = 28;
+            smallCanvas.height = 28;
+            const smallCtx = smallCanvas.getContext('2d');
+            
+            // Draw original canvas into small canvas
+            smallCtx.drawImage(canvas, 0, 0, 28, 28);
+            
+            const imageData = smallCanvas.toDataURL("image/png");
 
             fetch("/predict", {
                 method: "POST",
@@ -109,15 +197,21 @@
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    predictionSpan.innerText = data.prediction;
+                    statusText.innerText = "Ready for next digit";
+                } else {
+                    statusText.innerText = "Error: " + data.message;
+                }
+            })
+            .catch(err => {
+                statusText.innerText = "Connection error";
+                console.error(err);
             });
-
-        }
-
-        function show_number() {
-            window.location.reload();
-                
         }
     </script>
-
 </body>
 </html>

@@ -1,4 +1,3 @@
-
 import numpy as np
 from pathlib import Path
 
@@ -9,62 +8,35 @@ def softmax(Z):
     exp_Z = np.exp(Z - np.max(Z, axis=0, keepdims=True))
     return exp_Z / np.sum(exp_Z, axis=0, keepdims=True)
 
-def singular_prediction(X):
-    
-    file_path = Path("digit_recog_model.npz")
+class DigitPredictor:
+    def __init__(self, model_path="digit_recog_model.npz"):
+        self.model_path = Path(model_path)
+        self.w1, self.b1, self.w2, self.b2, self.w3, self.b3 = self._load_model()
 
-    if file_path.is_file():   
+    def _load_model(self):
+        if not self.model_path.is_file():
+            print("Model not found. Run model/model.py to train.")
+            return None, None, None, None, None, None
+        
+        data = np.load(self.model_path)
+        return (data["w1"], data["b1"], 
+                data["w2"], data["b2"],
+                data["w3"], data["b3"])
 
-        data = np.load(file_path)
+    def predict(self, X):
+        X = X.reshape(784, 1)
+        # Layer 1
+        Z1 = self.w1 @ X + self.b1
+        A1 = ReLu(Z1)
+        # Layer 2
+        Z2 = self.w2 @ A1 + self.b2
+        A2 = ReLu(Z2)
+        # Layer 3
+        Z3 = self.w3 @ A2 + self.b3
+        A3 = softmax(Z3)
+        return int(np.argmax(A3))
 
-        w1 = data["w1"]
-        b1 = data["b1"]
-        w2 = data["w2"]
-        b2 = data["b2"]
-
-    else:
-        import model
-        from sklearn.datasets import fetch_openml
-
-        mnist = fetch_openml('mnist_784', version=1)
-
-        x = mnist.data.to_numpy().astype(np.float32)
-        y = mnist.target.to_numpy().astype(np.int64)
-
-        x /= 255.0
-
-        model = model.recog(x.T, y, lr=0.1, epochs=500)
-        model.gradient_decent()
-        model.save_model()
-
-        data = np.load(file_path)
-
-        w1 = data["w1"]
-        b1 = data["b1"]
-        w2 = data["w2"]
-        b2 = data["b2"]
-
-
-
-    X  = X.reshape(784, 1)
-    Z1 =   w1 @ X + b1
-    A1 = ReLu(Z1)
-    Z2 = w2 @ A1 + b2
-    A2 = softmax(Z2)
-    return np.argmax(A2)
-
-def train_model():
-        import model
-        from sklearn.datasets import fetch_openml
-
-        mnist = fetch_openml('mnist_784', version=1)
-
-        x = mnist.data.to_numpy().astype(np.float32)
-        y = mnist.target.to_numpy().astype(np.int64)
-
-        x /= 255.0
-
-        model = model.recog(x.T, y, lr=0.1, epochs=500)
-        model.gradient_decent()
-        model.save_model()
-
+if __name__ == "__main__":
+    predictor = DigitPredictor()
+    dummy_input = np.zeros(784)
+    print(f"Prediction: {predictor.predict(dummy_input)}")
